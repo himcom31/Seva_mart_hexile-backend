@@ -1,6 +1,6 @@
 // middleware/vendorAuthMiddleware.js
 const jwt    = require('jsonwebtoken');
-const Vendor = require('../models/Vendor');
+const Vendor = require('../models/Vendor.js');
 
 /**
  * Protects vendor-only routes.

@@ -1,9 +1,9 @@
 // routes/vendorRoutes.js
 const express        = require('express');
 const router         = express.Router();
-const upload         = require('../middleware/uploadVendorMiddleware');
-const { protect, isAdmin }  = require('../middleware/authMiddleware');
-const { protectVendor }     = require('../middleware/vendorAuthMiddleware');
+const upload         = require('../middleware/uploadVendorMiddleware.js');
+const { protect, isAdmin }  = require('../middleware/authMiddleware.js');
+const { protectVendor }     = require('../middleware/vendorAuthMiddleware.js');
 
 const {
   // ── Auth ──────────────────────────────────────

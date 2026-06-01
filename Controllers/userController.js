@@ -1,5 +1,5 @@
-const User    = require('../models/User');
-const Booking = require('../models/Book');
+const User    = require('../models/User.js');
+const Booking = require('../models/Book.js');
 
 // ─── Get All Users (Admin) ────────────────────────────────────────────────────
 exports.getAllUsers = (req, res) => {

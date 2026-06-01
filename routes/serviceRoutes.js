@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
-const upload  = require('../middleware/uploadServiceMiddleware');
-const { protect, isAdmin } = require('../middleware/authMiddleware');
+const upload  = require('../middleware/uploadServiceMiddleware.js');
+const { protect, isAdmin } = require('../middleware/authMiddleware.js');
 const {
   addService,
   getAllServices,
@@ -11,7 +11,7 @@ const {
   toggleStatus,
   updateVerifyStatus,
   deleteService
-} = require('../Controllers/serviceController');
+} = require('../Controllers/serviceController.js');
 
 // Public
 router.get('/',                         getAllServices);

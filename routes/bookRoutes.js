@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const { protect, isAdmin } = require('../middleware/authMiddleware');
+const { protect, isAdmin } = require('../middleware/authMiddleware.js');
 const {
   createBooking,
   getAllBookings,

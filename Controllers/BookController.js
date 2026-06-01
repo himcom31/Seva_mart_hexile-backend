@@ -1,5 +1,5 @@
-const Booking = require('../models/Book');
-const Service = require('../models/Services/Service');
+const Booking = require('../models/Book.js');
+const Service = require('../models/Services/Service.js');
 
 const VALID_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 

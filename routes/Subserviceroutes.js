@@ -3,7 +3,7 @@ const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
-const { protect, isAdmin } = require('../middleware/authMiddleware');
+const { protect, isAdmin } = require('../middleware/authMiddleware.js');
 const {
   addSubService,
   getAllSubServices,

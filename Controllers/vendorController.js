@@ -1,5 +1,5 @@
 // Controllers/vendorController.js
-const Vendor = require('../models/Vendor');
+const Vendor = require('../models/Vendor.js');
 const jwt    = require('jsonwebtoken');
 const path   = require('path');
 const fs     = require('fs');
