@@ -1,5 +1,5 @@
-const SubService = require('../models/Services/SubService');
-const Service    = require('../models/Services/Service');
+const SubService = require('../models/Services/Subservice.js');
+const Service    = require('../models/Services/Service.js');
 const path = require('path');
 const fs   = require('fs');
 
