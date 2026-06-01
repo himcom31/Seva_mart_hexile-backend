@@ -12,8 +12,8 @@ const {
   assignVendor,
   deleteBooking,
   getMyBookings ,
-} = require('../Controllers/BookController');
-const { protectVendor } = require('../middleware/vendorAuthMiddleware');
+} = require('../Controllers/BookController.js');
+const { protectVendor } = require('../middleware/Vendorauthmiddleware.js');
 
 
 // ── Public ────────────────────────────────────────────────────────────────────
