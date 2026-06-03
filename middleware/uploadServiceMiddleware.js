@@ -24,7 +24,7 @@ const fileFilter = (req, file, cb) => {
 module.exports = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 2 * 1024 * 1024 }
+  limits: { fileSize: 20 * 1024 * 1024 }
 }).fields([
   { name: 'image', maxCount: 1 },
   { name: 'icon',  maxCount: 1 }
