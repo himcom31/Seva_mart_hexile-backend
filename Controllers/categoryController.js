@@ -1,10 +1,17 @@
-const Category = require('../models/Services/Category.js');
-const path = require('path');
-const fs = require('fs');
+const Category   = require('../models/Services/Category.js');
+const cloudinary = require('../config/cloudinary');
 
-// Helper: auto-generate slug from name
 const generateSlug = (name) =>
   name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+// Extract Cloudinary public_id from URL for deletion
+const getPublicId = (url) => {
+  if (!url) return null;
+  const parts = url.split('/');
+  const uploadIndex = parts.indexOf('upload');
+  if (uploadIndex === -1) return null;
+  return parts.slice(uploadIndex + 2).join('/').replace(/\.[^/.]+$/, '');
+};
 
 // @desc   Add Category
 // @route  POST /api/categories
@@ -17,15 +24,13 @@ exports.addCategory = async (req, res) => {
 
     const finalSlug = slug || generateSlug(name);
 
-    // Check duplicate slug
     const existing = Category.findBySlug(finalSlug);
-    if (existing) {
-      return res.status(409).json({ message: `Slug "${finalSlug}" already exists. Use a different name.` });
-    }
+    if (existing)
+      return res.status(409).json({ message: `Slug "${finalSlug}" already exists.` });
 
-    // Handle uploaded files
-    const image = req.files?.image?.[0]?.filename || null;
-    const icon  = req.files?.icon?.[0]?.filename  || null;
+    // Cloudinary returns full URL in file.path
+    const image = req.files?.image?.[0]?.path || null;
+    const icon  = req.files?.icon?.[0]?.path  || null;
 
     const category = Category.create({
       language: language || 'en',
@@ -34,7 +39,7 @@ exports.addCategory = async (req, res) => {
       image,
       icon,
       description,
-      status: status || 'active',
+      status:   status   || 'active',
       featured: featured === 'true' || featured === true ? 1 : 0
     });
 
@@ -73,38 +78,35 @@ exports.getCategoryById = (req, res) => {
 // @desc   Update Category
 // @route  PUT /api/categories/:id
 // @access Private (Admin)
-exports.updateCategory = (req, res) => {
+exports.updateCategory = async (req, res) => {
   try {
     const category = Category.findById(req.params.id);
     if (!category) return res.status(404).json({ message: 'Category not found' });
 
     const { language, name, slug, description, status, featured } = req.body;
 
-    // Handle new file uploads — delete old ones if replaced
     let image = category.image;
     let icon  = category.icon;
 
+    // Delete old Cloudinary image and save new URL
     if (req.files?.image?.[0]) {
-      if (category.image) {
-        const oldPath = path.join(__dirname, '../uploads/categories', category.image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      image = req.files.image[0].filename;
+      const oldId = getPublicId(category.image);
+      if (oldId) await cloudinary.uploader.destroy(oldId);
+      image = req.files.image[0].path;
     }
 
     if (req.files?.icon?.[0]) {
-      if (category.icon) {
-        const oldPath = path.join(__dirname, '../uploads/categories', category.icon);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      icon = req.files.icon[0].filename;
+      const oldId = getPublicId(category.icon);
+      if (oldId) await cloudinary.uploader.destroy(oldId);
+      icon = req.files.icon[0].path;
     }
 
     const updated = Category.update(req.params.id, {
       language: language || category.language,
       name:     name     || category.name,
       slug:     slug     || category.slug,
-      image, icon,
+      image,
+      icon,
       description: description ?? category.description,
       status:   status   || category.status,
       featured: featured !== undefined ? (featured === 'true' ? 1 : 0) : category.featured
@@ -119,18 +121,16 @@ exports.updateCategory = (req, res) => {
 // @desc   Delete Category
 // @route  DELETE /api/categories/:id
 // @access Private (Admin)
-exports.deleteCategory = (req, res) => {
+exports.deleteCategory = async (req, res) => {
   try {
     const category = Category.findById(req.params.id);
     if (!category) return res.status(404).json({ message: 'Category not found' });
 
-    // Delete associated files
-    ['image', 'icon'].forEach(field => {
-      if (category[field]) {
-        const filePath = path.join(__dirname, '../uploads/categories', category[field]);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      }
-    });
+    // Delete both image and icon from Cloudinary
+    for (const field of ['image', 'icon']) {
+      const publicId = getPublicId(category[field]);
+      if (publicId) await cloudinary.uploader.destroy(publicId);
+    }
 
     Category.delete(req.params.id);
     res.status(200).json({ success: true, message: 'Category deleted successfully' });
