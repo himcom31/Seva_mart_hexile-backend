@@ -223,15 +223,28 @@ exports.updateBooking = (req, res) => {
 exports.assignVendor = (req, res) => {
   try {
     const { vendor_id, vendor_name } = req.body;
-    if (!vendor_id || !vendor_name) {
-      return res.status(400).json({ message: 'vendor_id and vendor_name are required' });
+
+    // Allow null/empty for vendor removal, but if one is provided both must be
+    const isRemoving = !vendor_id && !vendor_name;
+    const isAssigning = vendor_id && vendor_name;
+
+    if (!isRemoving && !isAssigning) {
+      return res.status(400).json({ message: 'Provide both vendor_id and vendor_name to assign, or omit both to remove' });
     }
 
     const booking = Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    const updated = Booking.update(req.params.id, { vendor_id, vendor_name });
-    res.status(200).json({ success: true, message: 'Vendor assigned to booking', booking: updated });
+    const updated = Booking.update(req.params.id, {
+      vendor_id:   vendor_id   || null,
+      vendor_name: vendor_name || null,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: isRemoving ? 'Vendor removed from booking' : 'Vendor assigned to booking',
+      booking: updated,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }

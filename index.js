@@ -25,7 +25,7 @@ app.use('/api/services', require('./routes/serviceRoutes.js'));
 app.use('/api/vendors', require('./routes/vendorRoutes.js'));
 app.use('/api/users',    require('./routes/userRoutes.js'));
 app.use('/api/book', require('./routes/bookRoutes.js'));
-
+app.use('/api/vendor-categories', require('./routes/Vendorcategoryroutes.js'));
 
 
 

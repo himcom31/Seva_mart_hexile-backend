@@ -27,6 +27,16 @@ db.exec(`
     role TEXT NOT NULL DEFAULT 'doctor',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS vendor_categories (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT    NOT NULL UNIQUE,
+    slug        TEXT    NOT NULL UNIQUE,
+    description TEXT,
+    icon        TEXT,
+    is_active   INTEGER NOT NULL DEFAULT 1,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 console.log('SQLite Connected: database.sqlite');
