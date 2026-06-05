@@ -61,6 +61,21 @@ exports.registerVendor = (req, res) => {
       aadhaar_back, certificate, vendor_type, notes,
     });
 
+    let categoryIds = [];
+try {
+  // Frontend sends both vendor_category_ids[] (repeated) and vendor_category_ids (JSON)
+  const raw = req.body['vendor_category_ids[]'] || req.body.vendor_category_ids;
+  if (Array.isArray(raw)) categoryIds = raw.map(Number).filter(Boolean);
+  else if (typeof raw === 'string') {
+    categoryIds = (raw.startsWith('[') ? JSON.parse(raw) : [raw])
+      .map(Number).filter(Boolean);
+  }
+} catch { categoryIds = []; }
+
+if (categoryIds.length > 0) {
+  Vendor.setVendorCategories(vendor.id, categoryIds);
+}
+
     const token = generateToken(vendor.id);
 
     res.status(201).json({
@@ -218,7 +233,11 @@ exports.getAllVendors = (req, res) => {
   try {
     const { status, city, category_id, verify_status } = req.query;
     const vendors = Vendor.findAll({ status, city, category_id, verify_status });
-    res.status(200).json({ success: true, count: vendors.length, vendors });
+    const enriched = vendors.map(v => ({
+      ...v,
+      vendorCategories: Vendor.getVendorCategories(v.id),
+    }));
+    res.status(200).json({ success: true, count: enriched.length, vendors: enriched });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
@@ -228,9 +247,10 @@ exports.getVendorById = (req, res) => {
   try {
     const vendor = Vendor.findById(req.params.id);
     if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
-    const services   = Vendor.getServices(req.params.id);
-    const attendance = Vendor.getAttendance(req.params.id);
-    res.status(200).json({ success: true, vendor, services, attendance });
+    const services        = Vendor.getServices(req.params.id);
+    const attendance      = Vendor.getAttendance(req.params.id);
+    const vendorCategories = Vendor.getVendorCategories(req.params.id);   // ← add
+    res.status(200).json({ success: true, vendor: { ...vendor, vendorCategories }, services, attendance });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }

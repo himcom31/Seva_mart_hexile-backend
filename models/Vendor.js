@@ -51,6 +51,15 @@ db.exec(`
     FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,
     UNIQUE(vendor_id, date)
   );
+
+  CREATE TABLE IF NOT EXISTS vendor_category_map (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  vendor_id INTEGER NOT NULL,
+  vendor_category_id INTEGER NOT NULL,
+  FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,
+  FOREIGN KEY (vendor_category_id) REFERENCES vendor_categories(id) ON DELETE CASCADE,
+  UNIQUE(vendor_id, vendor_category_id)
+);
 `);
 
 const Vendor = {
@@ -190,6 +199,8 @@ const Vendor = {
     } catch { return { success: false, message: 'Service already assigned' }; }
   },
 
+  
+
   removeService: (vendor_id, service_id) => {
     db.prepare('DELETE FROM vendor_services WHERE vendor_id = ? AND service_id = ?').run(vendor_id, service_id);
   },
@@ -203,6 +214,22 @@ const Vendor = {
       WHERE vs.vendor_id = ?
     `).all(vendor_id);
   },
+
+  // Vendor Category Map (many-to-many)
+setVendorCategories: (vendor_id, category_ids = []) => {
+  db.prepare('DELETE FROM vendor_category_map WHERE vendor_id = ?').run(vendor_id);
+  const insert = db.prepare('INSERT OR IGNORE INTO vendor_category_map (vendor_id, vendor_category_id) VALUES (?, ?)');
+  for (const cid of category_ids) insert.run(vendor_id, cid);
+},
+
+getVendorCategories: (vendor_id) => {
+  return db.prepare(`
+    SELECT vc.id, vc.name, vc.slug
+    FROM vendor_category_map vcm
+    JOIN vendor_categories vc ON vcm.vendor_category_id = vc.id
+    WHERE vcm.vendor_id = ?
+  `).all(vendor_id);
+},
 
   // ── Attendance ───────────────────────────────────────────────────────────────
 
