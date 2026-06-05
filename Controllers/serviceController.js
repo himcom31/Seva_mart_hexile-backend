@@ -1,26 +1,21 @@
 const Service    = require('../models/Services/Service.js');
 const Category   = require('../models/Services/Category.js');
 const cloudinary = require('../config/cloudinary');
-const path       = require('path');
 
 const generateSlug = (name) =>
   name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-// Extract Cloudinary public_id from URL for deletion
+// Safely extract Cloudinary public_id from URL
 const getPublicId = (url) => {
   if (!url) return null;
-  // URL format: .../upload/v1234567890/services/filename.webp
-  const parts = url.split('/');
-  const uploadIndex = parts.indexOf('upload');
-  if (uploadIndex === -1) return null;
-  // Join folder + filename, strip extension
-  return parts.slice(uploadIndex + 2).join('/').replace(/\.[^/.]+$/, '');
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/);
+  return match ? match[1] : null;
 };
 
 // @desc   Add Service
 // @route  POST /api/services
 // @access Private (Admin)
-exports.addService = (req, res) => {
+exports.addService = async (req, res) => {
   try {
     const { name, category_id, code, slug, description, status, verify_status, featured, code_prefix } = req.body;
 
@@ -39,7 +34,6 @@ exports.addService = (req, res) => {
     if (Service.findBySlug(finalSlug))
       return res.status(409).json({ message: `Slug "${finalSlug}" already exists.` });
 
-    // Cloudinary returns full URL in file.path
     const image = req.files?.image?.[0]?.path || null;
     const icon  = req.files?.icon?.[0]?.path  || null;
 
@@ -53,7 +47,7 @@ exports.addService = (req, res) => {
       description,
       status:        status        || 'active',
       verify_status: verify_status || 'pending',
-      featured:      featured === 'true' || featured === true ? 1 : 0
+      featured:      featured === 'true' || featured === true ? 1 : 0,
     });
 
     res.status(201).json({ success: true, message: 'Service created successfully', service });
@@ -86,10 +80,10 @@ exports.getServicesByCategory = (req, res) => {
 
     const services = Service.findByCategoryId(req.params.category_id);
     res.status(200).json({
-      success: true,
+      success:  true,
       category: parentCategory.name,
       count:    services.length,
-      services
+      services,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
@@ -128,7 +122,6 @@ exports.updateService = async (req, res) => {
     let image = service.image;
     let icon  = service.icon;
 
-    // If new image uploaded, delete old one from Cloudinary then save new URL
     if (req.files?.image?.[0]) {
       const oldId = getPublicId(service.image);
       if (oldId) await cloudinary.uploader.destroy(oldId);
@@ -151,7 +144,7 @@ exports.updateService = async (req, res) => {
       description:   description   ?? service.description,
       status:        status        || service.status,
       verify_status: verify_status || service.verify_status,
-      featured:      featured !== undefined ? (featured === 'true' ? 1 : 0) : service.featured
+      featured:      featured !== undefined ? (featured === 'true' ? 1 : 0) : service.featured,
     });
 
     res.status(200).json({ success: true, message: 'Service updated', service: updated });
@@ -160,7 +153,7 @@ exports.updateService = async (req, res) => {
   }
 };
 
-// @desc   Toggle Status (active/inactive)
+// @desc   Toggle Status
 // @route  PATCH /api/services/:id/toggle-status
 // @access Private (Admin)
 exports.toggleStatus = (req, res) => {
@@ -204,7 +197,6 @@ exports.deleteService = async (req, res) => {
     const service = Service.findById(req.params.id);
     if (!service) return res.status(404).json({ message: 'Service not found' });
 
-    // Delete both image and icon from Cloudinary
     for (const field of ['image', 'icon']) {
       const publicId = getPublicId(service[field]);
       if (publicId) await cloudinary.uploader.destroy(publicId);
