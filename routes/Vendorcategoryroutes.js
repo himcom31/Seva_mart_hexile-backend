@@ -8,7 +8,7 @@ const {
   updateCategory,
   deactivateCategory,
   deleteCategory,
-} = require('../controllers/vendorCategoryController.js');
+} = require('../Controllers/Vendorcategorycontroller.js');
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
 router.get('/',              getAllCategories);   // GET  /api/vendor-categories

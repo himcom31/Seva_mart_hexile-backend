@@ -1,4 +1,4 @@
-const VendorCategory = require('../models/VendorCategory.js');
+const VendorCategory = require('../models/Vendorcategory');
 const slugify = require('slugify');
 
 const generateSlug = (name) =>
