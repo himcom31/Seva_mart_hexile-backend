@@ -18,8 +18,7 @@ const {
 router.get('/',                         getAllServices);
 router.get('/by-category/:category_id', getServicesByCategory);
 router.get('/:id',                      getServiceById);
-//image,
-      icon,
+
 // Admin only
 router.post('/',      protect, isAdmin,  upload.fields([
         { name: 'image',         maxCount: 3 },
