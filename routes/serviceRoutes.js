@@ -19,7 +19,7 @@ router.get('/',                         getAllServices);
 router.get('/by-category/:category_id', getServicesByCategory);
 router.get('/:id',                      getServiceById);
 
-// Admin only
+// Admin only giugiusgiudgvufd sdfcgdsiugiu
 router.post('/',      protect, isAdmin,  upload.fields([
         { name: 'image',         maxCount: 3 },
         { name: 'icon',  maxCount: 5 },
