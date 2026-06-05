@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const upload = require('../config/cloudinary');
+const upload  = require('../config/upload');           // ✅ multer middleware
 
 const { protect, isAdmin } = require('../middleware/authMiddleware.js');
 const {
@@ -11,26 +11,28 @@ const {
   updateService,
   toggleStatus,
   updateVerifyStatus,
-  deleteService
+  deleteService,
 } = require('../Controllers/serviceController.js');
 
-// Public
+// ── Public ───────────────────────────────────────────────────────────────────
 router.get('/',                         getAllServices);
 router.get('/by-category/:category_id', getServicesByCategory);
 router.get('/:id',                      getServiceById);
 
-// Admin only giugiusgiudgvufd sdfcgdsiugiu
-router.post('/',      protect, isAdmin,  upload.fields([
-        { name: 'image',         maxCount: 3 },
-        { name: 'icon',  maxCount: 5 },
-    ]), addService);
-router.put('/:id',    protect, isAdmin,  upload.fields([
-        { name: 'image',         maxCount: 2 },
-        { name: 'icon',  maxCount: 5 },
-    ]), updateService);
-router.delete('/:id', protect, isAdmin,         deleteService);
+// ── Admin only ───────────────────────────────────────────────────────────────
+router.post('/',      protect, isAdmin, upload.fields([
+  { name: 'image', maxCount: 3 },
+  { name: 'icon',  maxCount: 3 },
+]), addService);
 
-// Toggle / Verify (Admin)
+router.put('/:id',    protect, isAdmin, upload.fields([
+  { name: 'image', maxCount: 3 },
+  { name: 'icon',  maxCount: 3 },
+]), updateService);
+
+router.delete('/:id', protect, isAdmin, deleteService);
+
+// ── Toggle / Verify ──────────────────────────────────────────────────────────
 router.patch('/:id/toggle-status', protect, isAdmin, toggleStatus);
 router.patch('/:id/verify',        protect, isAdmin, updateVerifyStatus);
 

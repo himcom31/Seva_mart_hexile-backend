@@ -1,28 +1,30 @@
 const Service    = require('../models/Services/Service.js');
 const Category   = require('../models/Services/Category.js');
-const cloudinary = require('../config/cloudinary');
-const path       = require('path');
+const cloudinary = require('../config/cloudinary');   // ✅ raw SDK, has .uploader.destroy()
 
 const generateSlug = (name) =>
   name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-// Extract Cloudinary public_id from URL for deletion
+// Extract Cloudinary public_id from a full Cloudinary URL
 const getPublicId = (url) => {
   if (!url) return null;
-  // URL format: .../upload/v1234567890/services/filename.webp
-  const parts = url.split('/');
+  // URL format: .../upload/v1234567890/Re/Products/filename.webp
+  const parts       = url.split('/');
   const uploadIndex = parts.indexOf('upload');
   if (uploadIndex === -1) return null;
-  // Join folder + filename, strip extension
+  // Skip the version segment (v123...), join the rest, strip extension
   return parts.slice(uploadIndex + 2).join('/').replace(/\.[^/.]+$/, '');
 };
 
-// @desc   Add Service
-// @route  POST /api/services
-// @access Private (Admin)
+// ─── Add Service ────────────────────────────────────────────────────────────
+// POST /api/services  (Admin)
 exports.addService = (req, res) => {
   try {
-    const { name, category_id, code, slug, description, status, verify_status, featured, code_prefix } = req.body;
+    const {
+      name, category_id, code, slug,
+      description, status, verify_status,
+      featured, code_prefix,
+    } = req.body;
 
     if (!name)        return res.status(400).json({ message: 'Service name is required' });
     if (!category_id) return res.status(400).json({ message: 'category_id is required' });
@@ -39,7 +41,7 @@ exports.addService = (req, res) => {
     if (Service.findBySlug(finalSlug))
       return res.status(409).json({ message: `Slug "${finalSlug}" already exists.` });
 
-    // Cloudinary returns full URL in file.path
+    // Cloudinary storage returns the hosted URL in file.path
     const image = req.files?.image?.[0]?.path || null;
     const icon  = req.files?.icon?.[0]?.path  || null;
 
@@ -53,19 +55,18 @@ exports.addService = (req, res) => {
       description,
       status:        status        || 'active',
       verify_status: verify_status || 'pending',
-      featured:      featured === 'true' || featured === true ? 1 : 0
+      featured:      featured === 'true' || featured === true ? 1 : 0,
     });
 
     res.status(201).json({ success: true, message: 'Service created successfully', service });
   } catch (err) {
-    console.error('Add Service Error:', err.message);
+    console.error('addService error:', err.message);
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
 
-// @desc   Get All Services
-// @route  GET /api/services
-// @access Public
+// ─── Get All Services ────────────────────────────────────────────────────────
+// GET /api/services  (Public)
 exports.getAllServices = (req, res) => {
   try {
     const services = Service.findAll();
@@ -75,9 +76,8 @@ exports.getAllServices = (req, res) => {
   }
 };
 
-// @desc   Get Services by Category
-// @route  GET /api/services/by-category/:category_id
-// @access Public
+// ─── Get Services by Category ────────────────────────────────────────────────
+// GET /api/services/by-category/:category_id  (Public)
 exports.getServicesByCategory = (req, res) => {
   try {
     const parentCategory = Category.findById(req.params.category_id);
@@ -86,19 +86,18 @@ exports.getServicesByCategory = (req, res) => {
 
     const services = Service.findByCategoryId(req.params.category_id);
     res.status(200).json({
-      success: true,
+      success:  true,
       category: parentCategory.name,
       count:    services.length,
-      services
+      services,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
 
-// @desc   Get Single Service
-// @route  GET /api/services/:id
-// @access Public
+// ─── Get Single Service ──────────────────────────────────────────────────────
+// GET /api/services/:id  (Public)
 exports.getServiceById = (req, res) => {
   try {
     const service = Service.findById(req.params.id);
@@ -109,15 +108,17 @@ exports.getServiceById = (req, res) => {
   }
 };
 
-// @desc   Update Service
-// @route  PUT /api/services/:id
-// @access Private (Admin)
+// ─── Update Service ──────────────────────────────────────────────────────────
+// PUT /api/services/:id  (Admin)
 exports.updateService = async (req, res) => {
   try {
     const service = Service.findById(req.params.id);
     if (!service) return res.status(404).json({ message: 'Service not found' });
 
-    const { name, category_id, code, slug, description, status, verify_status, featured } = req.body;
+    const {
+      name, category_id, code, slug,
+      description, status, verify_status, featured,
+    } = req.body;
 
     if (category_id && category_id != service.category_id) {
       const parentCategory = Category.findById(category_id);
@@ -128,13 +129,14 @@ exports.updateService = async (req, res) => {
     let image = service.image;
     let icon  = service.icon;
 
-    // If new image uploaded, delete old one from Cloudinary then save new URL
+    // New image uploaded → delete old from Cloudinary, save new URL
     if (req.files?.image?.[0]) {
       const oldId = getPublicId(service.image);
       if (oldId) await cloudinary.uploader.destroy(oldId);
       image = req.files.image[0].path;
     }
 
+    // New icon uploaded → delete old from Cloudinary, save new URL
     if (req.files?.icon?.[0]) {
       const oldId = getPublicId(service.icon);
       if (oldId) await cloudinary.uploader.destroy(oldId);
@@ -151,18 +153,20 @@ exports.updateService = async (req, res) => {
       description:   description   ?? service.description,
       status:        status        || service.status,
       verify_status: verify_status || service.verify_status,
-      featured:      featured !== undefined ? (featured === 'true' ? 1 : 0) : service.featured
+      featured:      featured !== undefined
+                       ? (featured === 'true' ? 1 : 0)
+                       : service.featured,
     });
 
     res.status(200).json({ success: true, message: 'Service updated', service: updated });
   } catch (err) {
+    console.error('updateService error:', err.message);
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
 
-// @desc   Toggle Status (active/inactive)
-// @route  PATCH /api/services/:id/toggle-status
-// @access Private (Admin)
+// ─── Toggle Status ───────────────────────────────────────────────────────────
+// PATCH /api/services/:id/toggle-status  (Admin)
 exports.toggleStatus = (req, res) => {
   try {
     const service = Service.findById(req.params.id);
@@ -177,9 +181,8 @@ exports.toggleStatus = (req, res) => {
   }
 };
 
-// @desc   Update Verify Status
-// @route  PATCH /api/services/:id/verify
-// @access Private (Admin)
+// ─── Update Verify Status ────────────────────────────────────────────────────
+// PATCH /api/services/:id/verify  (Admin)
 exports.updateVerifyStatus = (req, res) => {
   try {
     const { verify_status } = req.body;
@@ -190,21 +193,24 @@ exports.updateVerifyStatus = (req, res) => {
     if (!service) return res.status(404).json({ message: 'Service not found' });
 
     const updated = Service.updateVerifyStatus(req.params.id, verify_status);
-    res.status(200).json({ success: true, message: `Verify status changed to ${verify_status}`, service: updated });
+    res.status(200).json({
+      success: true,
+      message: `Verify status changed to ${verify_status}`,
+      service: updated,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
 
-// @desc   Delete Service
-// @route  DELETE /api/services/:id
-// @access Private (Admin)
+// ─── Delete Service ──────────────────────────────────────────────────────────
+// DELETE /api/services/:id  (Admin)
 exports.deleteService = async (req, res) => {
   try {
     const service = Service.findById(req.params.id);
     if (!service) return res.status(404).json({ message: 'Service not found' });
 
-    // Delete both image and icon from Cloudinary
+    // Delete image + icon from Cloudinary before removing DB record
     for (const field of ['image', 'icon']) {
       const publicId = getPublicId(service[field]);
       if (publicId) await cloudinary.uploader.destroy(publicId);
@@ -213,6 +219,7 @@ exports.deleteService = async (req, res) => {
     Service.delete(req.params.id);
     res.status(200).json({ success: true, message: 'Service deleted successfully' });
   } catch (err) {
+    console.error('deleteService error:', err.message);
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
